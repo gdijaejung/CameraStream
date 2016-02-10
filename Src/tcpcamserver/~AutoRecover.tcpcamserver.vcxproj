@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{1632D20B-A57C-4AE9-A494-A0414AF347D3}</ProjectGuid>
+    <ProjectGuid>{28C8AC8D-98C4-4372-BA39-A02031D5633E}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>tcpcamserver</RootNamespace>
   </PropertyGroup>
@@ -78,18 +78,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\netcom\netlauncher.cpp" />
+    <ClCompile Include="..\netcom\packetqueue.cpp" />
+    <ClCompile Include="..\netcom\udpclient.cpp" />
+    <ClCompile Include="..\netcom\udpserver.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="network.cpp" />
-    <ClCompile Include="packetqueue.cpp" />
-    <ClCompile Include="session.cpp" />
-    <ClCompile Include="tcpserver.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="autocs.h" />
-    <ClInclude Include="network.h" />
-    <ClInclude Include="packetqueue.h" />
-    <ClInclude Include="session.h" />
-    <ClInclude Include="tcpserver.h" />
+    <ClInclude Include="..\netcom\netlauncher.h" />
+    <ClInclude Include="..\netcom\network.h" />
+    <ClInclude Include="..\netcom\packetqueue.h" />
+    <ClInclude Include="..\netcom\tcpserver.h" />
+    <ClInclude Include="..\netcom\udpclient.h" />
+    <ClInclude Include="..\netcom\udpserver.h" />
+    <ClInclude Include="..\opencvcom\streaming.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

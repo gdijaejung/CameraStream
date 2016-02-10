@@ -2,13 +2,13 @@
 .SUFFIXES : .cpp .o
 
 
-OBJECTS = ../netcom/network.o ../netcom/netlauncher.o ../netcom/packetqueue.o ../netcom/tcpserver.o ../netcom/udpserver.o ../netcom/udpclient.o  ../opencvcom/streamingsender.o  main.o
+OBJECTS = ../netcom/network.o ../netcom/netlauncher.o ../netcom/packetqueue.o ../netcom/tcpserver.o ../netcom/tcpclient.o ../netcom/udpclient.o  ../netcom/udpserver.o ../opencvcom/streamingsender.o ../opencvcom/streamingreceiver.o  main.o
 SRCS = $(OBJECTS:.o=.cpp)
 
 
 CC = g++
 CXXFLAGS = -g -std=c++11 -Wall -pedantic -pthread 
-TARGET = tcpcamserver
+TARGET = tcpcamclient
 
 
 $(TARGET) : $(OBJECTS)

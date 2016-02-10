@@ -1,18 +1,16 @@
 
 #include "tcpserver.h"
 #include "netlauncher.h"
-// #include <mmsystem.h>
-//#pragma comment(lib, "winmm.lib")
 
 using namespace std;
 using namespace network;
 
-//unsigned WINAPI TCPServerThreadFunction(void* arg);
 void* TCPServerThreadFunction(void* arg);
 
 
 cTCPServer::cTCPServer()
-	: m_isConnect(false)
+	: m_listener(NULL)
+	, m_isConnect(false)
 	, m_maxBuffLen(BUFFER_LENGTH)
 	, m_handle(0)
 	, m_threadLoop(true)
@@ -72,6 +70,12 @@ bool cTCPServer::Init(const int port, const int packetSize, const int maxPacketC
 }
 
 
+void cTCPServer::SetListener(iSessionListener *listener)
+{
+	m_listener = listener;
+}
+
+
 void cTCPServer::Close()
 {
 	m_isConnect = false;
@@ -82,23 +86,29 @@ void cTCPServer::Close()
 		pthread_join(m_handle, NULL);
  		m_handle = 0;
  	}
-	close(m_svrSocket);
-	m_svrSocket = INVALID_SOCKET;
+
+	if (m_svrSocket != INVALID_SOCKET)
+	{
+		close(m_svrSocket);
+		m_svrSocket = INVALID_SOCKET;
+	}
 }
 
 
-int cTCPServer::MakeFdSet(OUT fd_set &out)
+int cTCPServer::MakeFdSet(OUT fd_array &out)
 {
 	int maxfd = 0;
 	FD_ZERO(&out);
+	out.fd_count = 0;
 	for (auto &session : m_sessions)
 	{
 		FD_SET(session.socket, (fd_set*)&out);
-		if (session.socket > maxfd)
+		out.fd_array[out.fd_count++] = session.socket;
+		if (maxfd < session.socket)
 			maxfd = session.socket;
 	}
 
-	return maxfd + 1;
+	return maxfd+1;
 }
 
 
@@ -111,6 +121,11 @@ bool cTCPServer::AddSession(const SOCKET remoteSock)
 		if (remoteSock == session.socket)
 			return false; // 이미 있다면 종료.
 	}
+
+	cout << "add session" << endl;
+
+	if (m_listener)
+		m_listener->AddSession(remoteSock);
 
 	sSession session;
 	session.state = SESSION_STATE::LOGIN_WAIT;
@@ -128,8 +143,13 @@ void cTCPServer::RemoveSession(const SOCKET remoteSock)
 	{
 		if (remoteSock == m_sessions[i].socket)
 		{
+			if (m_listener)
+				m_listener->RemoveSession(remoteSock);
+
 			close(m_sessions[i].socket);
-//			common::rotatepopvector(m_sessions, i);
+			common::rotatepopvector(m_sessions, i);
+
+			cout << "remove session" << endl;
 			break;
 		}
 	}
@@ -160,7 +180,7 @@ void cTCPServer::RemoveSession(const SOCKET remoteSock)
 			fd_set acceptSockets;
 			FD_ZERO(&acceptSockets);
 			FD_SET(server->m_svrSocket, &acceptSockets);
-			int maxfd = server->m_svrSocket + 1;
+			const int maxfd = server->m_svrSocket + 1;
 			const int ret1 = select(maxfd, &acceptSockets, NULL, NULL, &t);
 			if (ret1 != 0 && ret1 != SOCKET_ERROR)
 			{
@@ -173,6 +193,7 @@ void cTCPServer::RemoveSession(const SOCKET remoteSock)
 					//clog::Error(clog::ERROR_CRITICAL, "Client를 Accept하는 도중에 에러가 발생함\n");
 					continue;
 				}
+				
 				server->AddSession(remoteSocket);
 			}
 			//-----------------------------------------------------------------------------------
@@ -181,14 +202,14 @@ void cTCPServer::RemoveSession(const SOCKET remoteSock)
 
 		//-----------------------------------------------------------------------------------
 		// Receive Packet
-		fd_set readSockets;
-		maxfd = server->MakeFdSet(readSockets);
-		const fd_set sockets = readSockets;
+		fd_array readSockets;
+		const int maxfd = server->MakeFdSet(readSockets);
+		const fd_array sockets = readSockets;
 
 		const int ret = select(maxfd, &readSockets, NULL, NULL, &t);
 		if (ret != 0 && ret != SOCKET_ERROR)
 		{
-			for (u_int i = 0; i < sockets.fd_count; ++i)
+			for (int i = 0; i < sockets.fd_count; ++i)
 			{
 				if (!FD_ISSET(sockets.fd_array[i], &readSockets))
 					continue;
@@ -200,7 +221,9 @@ void cTCPServer::RemoveSession(const SOCKET remoteSock)
 				}
 				else
 				{
-					//cout << "packet recv size = " << result << endl;
+// 					cout << "packet recv from = " << sockets.fd_array[i] << endl;
+// 					cout << "packet recv size = " << result << endl;
+// 					cout << "packet data = " << buff << endl;
 					server->m_recvQueue.Push(sockets.fd_array[i], (BYTE*)buff, result, true);
 				}
 			}

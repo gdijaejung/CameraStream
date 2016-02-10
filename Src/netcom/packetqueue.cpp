@@ -1,6 +1,7 @@
 
-#include "packetqueue.h"
+#include "network.h"
 #include "session.h"
+#include "packetqueue.h"
 
 using namespace network;
 
@@ -10,14 +11,14 @@ cPacketQueue::cPacketQueue()
 	, m_chunkBytes(0)
 	, m_totalChunkCount(0)
 {
-	//InitializeCriticalSectionAndSpinCount(&m_criticalSection, 0x00000400);
+	pthread_mutex_init(&m_criticalSection, NULL);
 }
 
 cPacketQueue::~cPacketQueue()
 {
 	Clear();
 
-	//DeleteCriticalSection(&m_criticalSection);
+	pthread_mutex_destroy(&m_criticalSection);
 }
 
 
@@ -43,7 +44,7 @@ bool cPacketQueue::Init(const int packetSize, const int maxPacketCount)
 void cPacketQueue::Push(const SOCKET sock, const BYTE *data, const int len,
 	const bool fromNetwork) // fromNetwork = false
 {
-	//cAutoCS cs(m_criticalSection);
+	cAutoCS cs(m_criticalSection);
 
 	bool isCopyBuffer = false;
 
@@ -55,7 +56,7 @@ void cPacketQueue::Push(const SOCKET sock, const BYTE *data, const int len,
 			// 해당 소켓이 채워지지 않은 버퍼라면,
 			if (m_queue[i].readLen < m_queue[i].totalLen)
 			{
-				const int copyLen = min(m_queue[i].totalLen - m_queue[i].readLen, len);
+				const int copyLen = MIN(m_queue[i].totalLen - m_queue[i].readLen, len);
 				memcpy(m_queue[i].buffer + m_queue[i].readLen, data, copyLen);
 				m_queue[i].readLen += copyLen;
 
@@ -98,6 +99,7 @@ void cPacketQueue::Push(const SOCKET sock, const BYTE *data, const int len,
 				// 패킷의 시작부가 아닌데, 시작부로 들어왔음.
 				// 헤더부가 깨졌거나, 기전 버퍼가 Pop 되었음.
 				// 무시하고 종료한다.
+				std::cout << "error occur" << std::endl;
 				return;
 			}
 		}
@@ -106,9 +108,9 @@ void cPacketQueue::Push(const SOCKET sock, const BYTE *data, const int len,
 
 		if (!packet.buffer)
 		{
-//			cs.Leave();
+			cs.Leave();
 			Pop();
-//			cs.Enter();
+			cs.Enter();
 			packet.buffer = Alloc();
 		}
 
@@ -142,7 +144,7 @@ void cPacketQueue::Push(const SOCKET sock, const BYTE *data, const int len,
 
 bool cPacketQueue::Front(OUT sPacket &out)
 {
-// 	cAutoCS cs(m_criticalSection);
+ 	cAutoCS cs(m_criticalSection);
  	RETV(m_queue.empty(), false);
  	RETV(!m_queue[0].full, false);
 
@@ -158,19 +160,20 @@ bool cPacketQueue::Front(OUT sPacket &out)
 
 void cPacketQueue::Pop()
 {
-// 	cAutoCS cs(m_criticalSection);
+ 	cAutoCS cs(m_criticalSection);
  	RET(m_queue.empty());
 
 	Free(m_queue.front().buffer);
-//	common::rotatepopvector(m_queue, 0);
+	common::rotatepopvector(m_queue, 0);
 }
 
 
+// 즉시 모든 패킷을 전송한다.
 void cPacketQueue::SendAll()
 {
 	RET(m_queue.empty());
 
-//	cAutoCS cs(m_criticalSection);
+	cAutoCS cs(m_criticalSection);
 	for (u_int i = 0; i < m_queue.size(); ++i)
 	{
 		send(m_queue[i].sock, (const char*)m_queue[i].buffer, m_queue[i].totalLen, 0);
@@ -184,7 +187,7 @@ void cPacketQueue::SendAll()
 // 패킷을 보낸다.
 void cPacketQueue::SendBroadcast(vector<sSession> &sessions, const bool exceptOwner)
 {
-//	cAutoCS cs(m_criticalSection);
+	cAutoCS cs(m_criticalSection);
 
 	for (u_int i = 0; i < m_queue.size(); ++i)
 	{
@@ -211,13 +214,13 @@ void cPacketQueue::SendBroadcast(vector<sSession> &sessions, const bool exceptOw
 
 void cPacketQueue::Lock()
 {
-//	EnterCriticalSection(&m_criticalSection);
+	pthread_mutex_lock(&m_criticalSection);
 }
 
 
 void cPacketQueue::Unlock()
 {
-//	LeaveCriticalSection(&m_criticalSection);
+	pthread_mutex_unlock(&m_criticalSection);
 }
 
 

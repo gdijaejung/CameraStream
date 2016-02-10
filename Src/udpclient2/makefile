@@ -8,7 +8,7 @@ SRCS = $(OBJECTS:.o=.cpp)
 
 CC = g++
 CXXFLAGS = -g -std=c++11 -Wall -pedantic -pthread 
-TARGET = tcpcamserver
+TARGET = udpclient2
 
 
 $(TARGET) : $(OBJECTS)

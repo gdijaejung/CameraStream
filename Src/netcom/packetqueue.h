@@ -75,6 +75,6 @@ namespace network
 		int m_packetBytes;	// 순수한 패킷 크기
 		int m_chunkBytes;	// sHeader 헤더를 포함한 패킷 크기
 		int m_totalChunkCount;
-		//CRITICAL_SECTION m_criticalSection;
+		pthread_mutex_t m_criticalSection;
 	};
 }

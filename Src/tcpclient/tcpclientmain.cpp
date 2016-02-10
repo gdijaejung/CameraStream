@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 {
 	int ssock;
 	struct sockaddr_in server_addr;
-	char buf[BUFSIZ] = "Hello world";
+	char buf[512] = "Hello world";
 
 	if (argc < 2)
 	{
@@ -48,15 +48,15 @@ int main(int argc, char **argv)
 
 	cout << "tcp client connect success.. " << endl;
 
-	fgets(buf, BUFSIZ, stdin);
-	if (write(ssock, buf, BUFSIZ) <= 0)
+	fgets(buf, sizeof(buf), stdin);
+	if (write(ssock, buf, sizeof(buf)) <= 0)
 	{
 		perror("write()");
 		return -1;
 	}
 
-	bzero(buf, BUFSIZ);
-	if (read(ssock, buf, BUFSIZ) <= 0)
+	bzero(buf, sizeof(buf));
+	if (read(ssock, buf, sizeof(buf)) <= 0)
 	{
 		perror("read()");
 		return -1;

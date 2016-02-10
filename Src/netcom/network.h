@@ -20,6 +20,8 @@
 #include <sys/time.h>
 #include <arpa/inet.h>
 #include <vector>
+#include <map>
+#include <algorithm>
 
 
 
@@ -51,8 +53,8 @@
 #define ASSERT_RET(exp)		{assert(exp); RET(!(exp) ); }
 #define ASSERT_RETV(exp,val)		{assert(exp); RETV(!(exp),val ); }
 #define BRK(exp)		{if((exp)) break; }			// exp°¡ break
-#define min(a,b) (((a)<(b))?(a):(b))
-#define max(a,b) (((a)>(b))?(a):(b))
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
 
 #define INVALID_SOCKET  (SOCKET)(~0)
 #define SOCKET_ERROR            (-1)
@@ -64,10 +66,18 @@ typedef unsigned char BYTE;
 typedef unsigned int DWORD;
 
 using std::vector;
+using std::map;
+using std::string;
 
 namespace network {
 	enum {
 		BUFFER_LENGTH = 512,
+	};
+
+	struct fd_array : fd_set
+	{
+		SOCKET fd_array[128];
+		int fd_count;
 	};
 }
 
@@ -91,4 +101,11 @@ unsigned long GetTickCount2();
 
 
 
+#include "common.h"
 #include "autocs.h"
+#include "session.h"
+#include "packetqueue.h"
+#include "tcpserver.h"
+#include "tcpclient.h"
+#include "udpclient.h"
+#include "udpserver.h"
